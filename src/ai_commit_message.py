@@ -15,7 +15,7 @@ def build_prompt(repo_name: str, changed_files: list[str], diff_text: str) -> st
     files_preview = "\n".join(changed_files[:50])
     return (
         "You are a senior engineer writing concise, conventional commit messages.\n"
-        "Return only the commit title line, max 72 chars, no quotes.\n"
+        "Return only the commit title line, no quotes.\n"
         f"Repository: {repo_name}\n"
         f"Changed files ({len(changed_files)}):\n{files_preview}\n\n"
         f"Diff summary:\n{diff_text}\n"
@@ -51,11 +51,6 @@ def normalize_message(text: str) -> str:
     if not first_line:
         logger.warning("normalize_message received empty text after processing")
         return "chore: automated update"
-
-    # Ensure max 72 chars per conventional commits spec
-    if len(first_line) > 72:
-        logger.warning("Commit message truncated from %d to 72 chars", len(first_line))
-        first_line = first_line[:72]
 
     logger.info("Normalized message to: %s", first_line)
     return first_line
