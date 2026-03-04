@@ -15,6 +15,8 @@ def build_prompt(repo_name: str, changed_files: list[str], diff_text: str) -> st
     files_preview = "\n".join(changed_files[:50])
     return (
         "You are a senior engineer writing concise, conventional commit messages.\n"
+        "Use the following format:\n"
+        "<type>(<scope>): <subject>\n"
         "Return only the commit title line, no quotes.\n"
         f"Repository: {repo_name}\n"
         f"Changed files ({len(changed_files)}):\n{files_preview}\n\n"
