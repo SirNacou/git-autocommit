@@ -88,9 +88,33 @@ Important ones:
 - Deployments should consume a pinned GHCR image tag in production.
 
 ## Testing
+### Unit Tests
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
 ```
+
+### CLI Testing (Quick Validation)
+Test your setup immediately without waiting 15 minutes:
+
+**Test API key validity:**
+```bash
+docker compose exec autocommit python cli.py test-api -v
+```
+Expected output if valid:
+```
+✓ API key is valid!
+Response: test successful
+```
+
+**Test commit message generation for a repository:**
+```bash
+docker compose exec autocommit python cli.py test-repo /repos/your-repo -v
+```
+This will:
+1. Detect uncommitted changes in the repo
+2. Generate an AI commit message
+3. Show you exactly what would be committed
+4. Display full debug logs with `-v`
