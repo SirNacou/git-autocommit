@@ -65,7 +65,11 @@ def has_merge_conflicts(repo_path: str) -> bool:
 
 def has_upstream(repo_path: str) -> bool:
     try:
-        run_git(repo_path, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], timeout=15)
+        run_git(
+            repo_path,
+            ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+            timeout=15,
+        )
         return True
     except GitCommandError:
         return False
@@ -75,7 +79,9 @@ def stage_all(repo_path: str) -> None:
     run_git(repo_path, ["add", "-A"], timeout=30)
 
 
-def create_commit(repo_path: str, message: str, author_name: str, author_email: str) -> str:
+def create_commit(
+    repo_path: str, message: str, author_name: str, author_email: str
+) -> str:
     env = {
         "GIT_AUTHOR_NAME": author_name,
         "GIT_AUTHOR_EMAIL": author_email,
@@ -84,7 +90,3 @@ def create_commit(repo_path: str, message: str, author_name: str, author_email: 
     }
     run_git(repo_path, ["commit", "-m", message], timeout=30, env=env)
     return run_git(repo_path, ["rev-parse", "HEAD"], timeout=10)
-
-
-def push_current_branch(repo_path: str, branch: str) -> None:
-    run_git(repo_path, ["push", "origin", branch], timeout=60)

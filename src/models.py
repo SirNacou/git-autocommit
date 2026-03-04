@@ -19,7 +19,6 @@ class Config:
     max_diff_chars: int
     state_db_path: str
     log_level: str
-    push_enabled: bool
     health_port: int
     repo_timeout_seconds: int
 

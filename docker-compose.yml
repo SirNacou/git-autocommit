@@ -1,15 +1,12 @@
 services:
   autocommit:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/${GHCR_OWNER:-your-github-owner}/git-autocommit:${IMAGE_TAG:-latest}
     container_name: git-autocommit
     env_file:
       - .env
     volumes:
       - ${REPOS_HOST_PATH:-./watched-repos}:/repos
-      - ./src:/app/src
-      - autocommit_data:/data
+      - ./data:/data
     restart: unless-stopped
     healthcheck:
       test:
@@ -23,6 +20,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-
-volumes:
-  autocommit_data:

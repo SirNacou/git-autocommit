@@ -19,7 +19,6 @@ from src.git_ops import (
     create_commit,
     get_current_branch,
     is_git_repo,
-    push_current_branch,
     stage_all,
 )
 from src.models import Config, RepoResult, RunSummary
@@ -60,6 +59,7 @@ class AutoCommitScheduler:
                 )
             except Exception as exc:
                 branch = self._safe_branch(repo_path)
+                self.logger.exception("Unexpected error processing repo: %s", repo_path)
                 result = RepoResult(
                     repo_path=repo_path,
                     branch=branch,
@@ -117,6 +117,7 @@ class AutoCommitScheduler:
         add_safe_directory(repo_path)
 
         if not is_git_repo(repo_path):
+            self.logger.info("Skipping %s - not a git repository", repo_path)
             return RepoResult(
                 repo_path=repo_path,
                 branch="",
@@ -127,9 +128,11 @@ class AutoCommitScheduler:
             )
 
         branch = self._safe_branch(repo_path)
+        self.logger.debug("Repo %s on branch %s", repo_path, branch)
 
         changes = detect_repo_changes(repo_path, self.config.max_diff_chars)
         if changes is None:
+            self.logger.info("Skipping %s - no changes", repo_path)
             return RepoResult(
                 repo_path=repo_path,
                 branch=branch,
@@ -139,8 +142,13 @@ class AutoCommitScheduler:
                 error="no changes",
             )
 
+        self.logger.debug(
+            "Detected %d changed files in %s", len(changes.changed_files), repo_path
+        )
+
         last_hash = self.state_store.last_change_hash(repo_path)
         if last_hash and last_hash == changes.change_hash:
+            self.logger.info("Skipping %s - same change hash as before", repo_path)
             return RepoResult(
                 repo_path=repo_path,
                 branch=branch,
@@ -154,17 +162,20 @@ class AutoCommitScheduler:
             ok, reason = check_safe_mode(
                 repo_path, self.config.branch_allowlist, self.config.run_tests_cmd
             )
+            if not ok:
+                self.logger.info("Skipping repo - policy check failed: %s", reason)
+                return RepoResult(
+                    repo_path=repo_path,
+                    branch=branch,
+                    change_hash=changes.change_hash,
+                    action="skipped",
+                    status="skipped",
+                    error=reason,
+                )
         else:
-            ok, reason = True, "ok"
-        if not ok:
-            return RepoResult(
-                repo_path=repo_path,
-                branch=branch,
-                change_hash=changes.change_hash,
-                action="skipped",
-                status="skipped",
-                error=reason,
-            )
+            self.logger.debug("commit_policy not 'safe', skipping policy checks")
+
+        self.logger.debug("Policy checks passed, proceeding with commit")
 
         repo_name = get_repo_name(repo_path)
         prompt = build_prompt(repo_name, changes.changed_files, changes.diff_text)
@@ -183,16 +194,18 @@ class AutoCommitScheduler:
             )
 
         try:
+            self.logger.info("Staging all changes in %s", repo_path)
             stage_all(repo_path)
+            self.logger.info("Creating commit with message: %s", message)
             commit_sha = create_commit(
                 repo_path,
                 message,
                 self.config.git_author_name,
                 self.config.git_author_email,
             )
-            if self.config.push_enabled:
-                push_current_branch(repo_path, branch)
+            self.logger.info("✓ Commit created: %s", commit_sha)
         except GitCommandError as exc:
+            self.logger.error("Git operation failed: %s", str(exc))
             return RepoResult(
                 repo_path=repo_path,
                 branch=branch,

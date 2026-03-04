@@ -1,0 +1,6 @@
+services:
+  autocommit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/sirnacou/git-autocommit:latest

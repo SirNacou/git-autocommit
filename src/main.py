@@ -51,7 +51,6 @@ def load_config() -> Config:
         max_diff_chars=_read_int("MAX_DIFF_CHARS", 12000),
         state_db_path=os.getenv("STATE_DB_PATH", "/data/state.db").strip(),
         log_level=os.getenv("LOG_LEVEL", "INFO").strip().upper(),
-        push_enabled=_read_bool("PUSH_ENABLED", True),
         health_port=_read_int("HEALTH_PORT", 8080),
         repo_timeout_seconds=_read_int("REPO_TIMEOUT_SECONDS", 120),
     )
