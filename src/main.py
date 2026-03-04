@@ -39,7 +39,10 @@ def load_config() -> Config:
 
     return Config(
         openrouter_api_key=api_key,
-        openrouter_model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free").strip(),
+        # Using DeepSeek free tier model by default - no charges for API calls
+        openrouter_model=os.getenv(
+            "OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free"
+        ).strip(),
         repos_root=repos_root,
         scan_interval_minutes=_read_int("SCAN_INTERVAL_MINUTES", 15),
         branch_allowlist=branch_allowlist,
@@ -91,7 +94,10 @@ def main() -> None:
     start_health_server(config.health_port)
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting auto-commit worker; scan interval=%s minutes", config.scan_interval_minutes)
+    logger.info(
+        "Starting auto-commit worker; scan interval=%s minutes",
+        config.scan_interval_minutes,
+    )
 
     state_store = StateStore(config.state_db_path)
     scheduler = AutoCommitScheduler(config, state_store)

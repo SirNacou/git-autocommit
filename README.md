@@ -77,7 +77,8 @@ For each scan cycle:
 See `.env.example` for all variables.
 
 Important ones:
-- `OPENROUTER_API_KEY` required.
+- `OPENROUTER_API_KEY` required. Get one free at https://openrouter.ai (no payment required for free tier).
+- `OPENROUTER_MODEL` defaults to `deepseek/deepseek-chat-v3-0324:free` (completely free, no charges).
 - `BRANCH_ALLOWLIST` supports glob patterns (`feature/*`).
 - `RUN_TESTS_CMD` optional command executed per repo before commit.
 - `PUSH_ENABLED=false` allows local commit-only mode.
