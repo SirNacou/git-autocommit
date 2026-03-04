@@ -39,10 +39,8 @@ def load_config() -> Config:
 
     return Config(
         openrouter_api_key=api_key,
-        # Using DeepSeek free tier model by default - no charges for API calls
-        openrouter_model=os.getenv(
-            "OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free"
-        ).strip(),
+        # Using OpenRouter's free endpoint - routes to available free models
+        openrouter_model=os.getenv("OPENROUTER_MODEL", "openrouter/free").strip(),
         repos_root=repos_root,
         scan_interval_minutes=_read_int("SCAN_INTERVAL_MINUTES", 15),
         branch_allowlist=branch_allowlist,

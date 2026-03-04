@@ -113,10 +113,8 @@ def main() -> int:
     )
     test_api_parser.add_argument(
         "--model",
-        default=os.getenv(
-            "OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free"
-        ).strip(),
-        help="Model to test (default: deepseek free tier)",
+        default=os.getenv("OPENROUTER_MODEL", "openrouter/free").strip(),
+        help="Model to test (default: openrouter free endpoint)",
     )
     test_api_parser.add_argument(
         "-v", "--verbose", action="store_true", help="Verbose logging"
@@ -134,10 +132,8 @@ def main() -> int:
     )
     test_repo_parser.add_argument(
         "--model",
-        default=os.getenv(
-            "OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free"
-        ).strip(),
-        help="Model to use (default: deepseek free tier)",
+        default=os.getenv("OPENROUTER_MODEL", "openrouter/free").strip(),
+        help="Model to use (default: openrouter free endpoint)",
     )
     test_repo_parser.add_argument(
         "-v", "--verbose", action="store_true", help="Verbose logging"
