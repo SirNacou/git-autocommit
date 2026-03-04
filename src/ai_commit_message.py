@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Optional
 
 import requests
 
 
+logger = logging.getLogger(__name__)
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
@@ -25,11 +27,38 @@ def fallback_message(repo_name: str, changed_files: list[str]) -> str:
 
 
 def normalize_message(text: str) -> str:
-    first_line = (text or "").strip().splitlines()[0] if text.strip() else ""
-    first_line = first_line.strip().strip("\"'")
-    if not first_line:
+    """
+    Extract and normalize the commit message from API response.
+    Handles various response formats and edge cases.
+    """
+    if not text:
         return "chore: automated update"
-    return first_line[:72]
+
+    # Remove leading/trailing whitespace
+    text = text.strip()
+    if not text:
+        return "chore: automated update"
+
+    # Get the first line
+    first_line = text.splitlines()[0] if text else ""
+    first_line = first_line.strip()
+
+    # Remove quotes if present (in case API wrapped the response)
+    first_line = first_line.strip("\"'`")
+    first_line = first_line.strip()
+
+    # Check if we got anything meaningful
+    if not first_line:
+        logger.warning("normalize_message received empty text after processing")
+        return "chore: automated update"
+
+    # Ensure max 72 chars per conventional commits spec
+    if len(first_line) > 72:
+        logger.warning("Commit message truncated from %d to 72 chars", len(first_line))
+        first_line = first_line[:72]
+
+    logger.info("Normalized message to: %s", first_line)
+    return first_line
 
 
 def generate_commit_message(
@@ -53,28 +82,68 @@ def generate_commit_message(
     backoff = 1.0
     for attempt in range(1, retries + 1):
         try:
-            response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=timeout)
-        except requests.RequestException:
+            response = requests.post(
+                OPENROUTER_URL, json=payload, headers=headers, timeout=timeout
+            )
+        except requests.RequestException as exc:
+            logger.warning(
+                "API request failed (attempt %d/%d): %s", attempt, retries, exc
+            )
             if attempt == retries:
+                logger.error("API request failed after %d retries", retries)
                 return None
             time.sleep(backoff)
             backoff *= 2
             continue
 
         if response.status_code in (429, 500, 502, 503, 504):
+            logger.warning(
+                "API returned status %d (attempt %d/%d)",
+                response.status_code,
+                attempt,
+                retries,
+            )
             if attempt == retries:
+                logger.error(
+                    "API returned retryable status code after %d attempts", retries
+                )
                 return None
             time.sleep(backoff)
             backoff *= 2
             continue
 
         if response.status_code >= 400:
+            logger.error(
+                "API returned status %d: %s", response.status_code, response.text[:200]
+            )
             return None
 
         try:
             data = response.json()
-            return data["choices"][0]["message"]["content"]
-        except (ValueError, KeyError, IndexError, TypeError):
+            message = data["choices"][0]["message"]["content"]
+
+            # Check if message is empty or just whitespace
+            if not message or not message.strip():
+                logger.warning(
+                    "API returned empty message (attempt %d/%d)", attempt, retries
+                )
+                if attempt == retries:
+                    logger.error(
+                        "API returned empty message after %d attempts", retries
+                    )
+                    return None
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+
+            logger.info("API returned message: %s", message[:100])
+            return message
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            logger.error(
+                "Failed to parse API response: %s. Response: %s",
+                exc,
+                response.text[:200],
+            )
             return None
 
     return None

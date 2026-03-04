@@ -151,7 +151,9 @@ class AutoCommitScheduler:
             )
 
         if self.config.commit_policy == "safe":
-            ok, reason = check_safe_mode(repo_path, self.config.branch_allowlist, self.config.run_tests_cmd)
+            ok, reason = check_safe_mode(
+                repo_path, self.config.branch_allowlist, self.config.run_tests_cmd
+            )
         else:
             ok, reason = True, "ok"
         if not ok:
@@ -171,7 +173,14 @@ class AutoCommitScheduler:
             model=self.config.openrouter_model,
             prompt=prompt,
         )
-        message = normalize_message(ai_message) if ai_message else fallback_message(repo_name, changes.changed_files)
+        if ai_message:
+            message = normalize_message(ai_message)
+            self.logger.info("Using AI-generated message: %s", message)
+        else:
+            message = fallback_message(repo_name, changes.changed_files)
+            self.logger.warning(
+                "AI message generation failed, using fallback: %s", message
+            )
 
         try:
             stage_all(repo_path)
