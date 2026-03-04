@@ -96,16 +96,20 @@ def generate_commit_message(
             backoff *= 2
             continue
 
-        if response.status_code in (429, 500, 502, 503, 504):
+        # Retry on transient errors (429, 500-504) and auth errors (401)
+        if response.status_code in (401, 429, 500, 502, 503, 504):
             logger.warning(
-                "API returned status %d (attempt %d/%d)",
+                "API returned status %d (attempt %d/%d): %s",
                 response.status_code,
                 attempt,
                 retries,
+                response.text[:200],
             )
             if attempt == retries:
                 logger.error(
-                    "API returned retryable status code after %d attempts", retries
+                    "API returned status %d after %d attempts. Check your OPENROUTER_API_KEY.",
+                    response.status_code,
+                    retries,
                 )
                 return None
             time.sleep(backoff)
